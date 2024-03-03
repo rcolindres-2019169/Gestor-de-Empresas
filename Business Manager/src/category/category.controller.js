@@ -1,7 +1,27 @@
 'use strict'
 
 import Category from './category.model.js'
+import Company from '../company/company.model.js'
 import { checkUpdate } from '../utils/validator.js'
+
+export const defaultCategory = async()=>{
+    try{
+        const categoryExist  = await Category.findOne({name: 'default'})
+        if(categoryExist){
+            console.log('Category "default" exist.')
+            return
+        }
+        let data = {
+            name: 'default',
+            description: 'category Default'
+        }
+        let category = new Category (data)
+        await category.save()
+    }
+    catch(err){
+        console.error(err)
+    }
+}
 
 export const save = async(req, res)=>{  
     try{
@@ -45,6 +65,12 @@ export const deleteU = async (req,res)=>{
         let { id } = req.params
         let deletedCategory = await Category.findOneAndDelete({_id: id})
         if(!deletedCategory) return res.status(404).send({message: 'Category not found and not deleted'})
+        const defaultCategory = await Category.findOne({ name: 'Default' });
+        if (!defaultCategory) {
+            return res.status(404).send({ message: 'Default category not found' });
+        }
+
+        await Company.updateMany({ category: id }, { $set: { category: defaultCategory._id } });
         return res.send({message: `Category with name ${deletedCategory.name} deleted successfully`})
     }catch(err){
         console.error(err)

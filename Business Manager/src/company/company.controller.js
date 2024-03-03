@@ -1,12 +1,18 @@
 'use strict'
 
 import Company from './company.model.js'
+import Category from '../category/category.model.js'
 import { checkUpdate } from '../utils/validator.js'
 import excel from 'exceljs';
 
 export const save = async(req,res) =>{
     try{
         let data = req.body
+        const existingCategory = await Category.findById( data.category );
+        if (!existingCategory) {
+            return res.status(400).send({ message: 'The category does not exist' });
+        }
+
         const existingCompany = await Company.findOne({name: data.name})
         if(existingCompany){
             return res.status(400).send({ message: 'Company with the same name already exists' });
@@ -26,12 +32,21 @@ export const update = async (req,res) =>{
         let {id} = req.params
         let data = req.body
         let update = checkUpdate(data, id)
+        const existingCategory = await Category.findById( data.category );
+        if (!existingCategory) {
+            return res.status(400).send({ message: 'The category does not exist' });
+        }
+
+        const existingCompany = await Company.findOne({name: data.name})
+        if(existingCompany){
+            return res.status(400).send({ message: 'Company with the same name already exists' });
+        }
         if(!update) return res.status(400).send({message: 'Have submitted some data that cannot be updated or missing data'})
         let updatedCompany = await Company.findOneAndUpdate(
             {_id: id},
             data, 
             {new: true}
-        )
+        ).populate('category',['name'])
         if(!updatedCompany) return res.status(401).send({message: 'Company not found and not updated'})
         return res.send({message: 'Updated company', updatedCompany})
     }catch(err){
@@ -43,7 +58,7 @@ export const update = async (req,res) =>{
 
 export const get = async (req,res)=>{
     try{
-        let companies = await Company.find()
+        let companies = await Company.find().populate('category', ['name'])
         return res.send({companies})
     }catch(err){
         console.error(err)
@@ -62,7 +77,7 @@ export const getZ = async (req,res)=>{
             order = -1; 
         }
 
-        let companies = await Company.find().sort({ name: order });
+        let companies = await Company.find().sort({ name: order }).populate('category', ['name']);
         return res.send({ companies });
     } catch (err) {
         console.error(err);
@@ -79,7 +94,7 @@ export const getA = async (req,res)=>{
             order = 1; 
         }
 
-        let companies = await Company.find().sort({ name: order });
+        let companies = await Company.find().sort({ name: order }).populate('category', ['name']);;
         return res.send({ companies });
     } catch (err) {
         console.error(err);
@@ -96,7 +111,7 @@ export const search = async (req,res)=>{
            { years: years},
            { category: category }
         ]
-        })
+        }).populate('category', ['name']);
         if (companies.length === 0) {
             return res.status(404).send({ message: 'Companies not found' });
         }
