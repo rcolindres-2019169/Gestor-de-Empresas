@@ -65,7 +65,7 @@ export const deleteU = async (req,res)=>{
         let { id } = req.params
         let deletedCategory = await Category.findOneAndDelete({_id: id})
         if(!deletedCategory) return res.status(404).send({message: 'Category not found and not deleted'})
-        const defaultCategory = await Category.findOne({ name: 'Default' });
+        const defaultCategory = await Category.findOne({ name: 'default' });
         if (!defaultCategory) {
             return res.status(404).send({ message: 'Default category not found' });
         }
